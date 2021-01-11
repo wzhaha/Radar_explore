@@ -51,6 +51,7 @@ def get_range_bin(data):
     max_pos = np.argmax(add_pos_data)
     return max_pos
 
+
 '''
 在背景相减后的波形上获取得到人体所在位置,并提取呼吸波形
 '''
@@ -59,6 +60,7 @@ def get_breathe_data(data):
     # 求出最大值的位置
     max_pos = np.argmax(add_pos_data)
     return data[:, max_pos]
+
 
 '''
 找打数组中距离最近的两个点的index
@@ -79,3 +81,46 @@ def find_min_dis_index(data, threadsold):
         return index1, index2
     return None, None
 
+
+'''
+SG滤波
+'''
+def sg_filter(data, window_size, order):
+    if window_size % 2 == 0 or window_size == 0:
+        window_size += 1
+
+    arr = []
+    step = int((window_size - 1) / 2)
+    for i in range(window_size):
+        a = []
+        for j in range(order):
+            y_val = np.power(-step + i, j)
+            a.append(y_val)
+        arr.append(a)
+
+    arr = np.mat(arr)
+    arr = arr * (arr.T * arr).I * arr.T
+
+    a = np.array(arr[step])
+    a = a.reshape(window_size)
+
+    data = np.insert(data, 0, [data[0] for i in range(step)])
+    data = np.append(data, [data[-1] for i in range(step)])
+
+    qlist = []
+    for i in range(step, data.shape[0] - step):
+        arra = []
+        for j in range(-step, step + 1):
+            arra.append(data[i + j])
+        b = np.sum(np.array(arra) * a)
+        qlist.append(b)
+    return qlist
+
+
+# data = [1,2,1,1,2,1,2,1,2]
+# res = sg_filter(data, 5, 4)
+# print(res)
+# import matplotlib.pyplot as plt
+# plt.plot(data)
+# plt.plot(res)
+# plt.show()

@@ -32,10 +32,10 @@ wlbt.Init()
 threshold = 0.002 # 背景相减后的最大振幅,如果小于此值,认为没有目标存在
 x_min = 4 # 在每组天线算出的x值的差值不可以超过此值
 range_bin_resolution = 0.24 # 每个bin对应的距离
-xlim_min = -50
+xlim_min = -40
 xlim_max = 10
 ylim_min = 0
-ylim_max = 60
+ylim_max = 50
 
 '''
 从原始信号获取距离
@@ -331,8 +331,13 @@ def raw_signal_target_2D():
             print('目标位置 x:{}    y:{}'.format(round(x, 2), round(y, 2)))
             track_x.append(x)
             track_y.append(y)
+            # sg滤波
+            if len(track_x) > 10:
+                filter_x = sg_filter(track_x, 5, 3)
+            else:
+                filter_x = track_x
             plt.clf()
-            plt.scatter(track_x, track_y)
+            plt.scatter(filter_x, track_y)
             plt.xlim(xlim_min, xlim_max)
             plt.ylim(ylim_min, ylim_max)
             plt.pause(0.001)
@@ -340,10 +345,12 @@ def raw_signal_target_2D():
             no_target_timer =  no_target_timer + 1
             # 大约3秒没有追踪到目标,就清理一下数据
             if no_target_timer > 100:
-                signals = np.asarray(signals)[:, 0].tolist()
+                # 清空所有数据
+                signals = [[], [], [], [], [], [], [], [], [], []]
                 track_x.clear()
                 track_y.clear()
                 plt.clf()
+                no_target_timer = 0
 
     wlbt.Stop()
     wlbt.Disconnect()
